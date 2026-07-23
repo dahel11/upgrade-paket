@@ -835,6 +835,11 @@ async function lihatUpgrade(){
   // Kumpulkan harga per add-on secara terpisah (bukan dijumlah dulu).
   // Prorate dihitung per add-on lalu dijumlah — cocok dengan logika spreadsheet
   // dan menghindari selisih ±1 akibat pembulatan gabungan.
+  const pilihIPA    = document.getElementById("checkIPA")?.checked;
+  const pilihFisika = document.getElementById("checkFisika")?.checked;
+  const pilihKimia  = document.getElementById("checkKimia")?.checked;
+  const pilihMTK    = document.getElementById("checkMTK")?.checked;
+
   const addonList = [];
   if(pilihIPA)    addonList.push(addonPrices.IPA);
   if(pilihFisika) addonList.push(addonPrices.Fisika);
