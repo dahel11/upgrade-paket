@@ -832,30 +832,17 @@ async function lihatUpgrade(){
   // (tidak prorata); prorata hanya berlaku jika upgrade di tengah semester.
   const isPreSemester = today.getTime() <= semStart.getTime();
 
-  let priceUpgrade = 0;
+  // Kumpulkan harga per add-on secara terpisah (bukan dijumlah dulu).
+  // Prorate dihitung per add-on lalu dijumlah — cocok dengan logika spreadsheet
+  // dan menghindari selisih ±1 akibat pembulatan gabungan.
+  const addonList = [];
+  if(pilihIPA)    addonList.push(addonPrices.IPA);
+  if(pilihFisika) addonList.push(addonPrices.Fisika);
+  if(pilihKimia)  addonList.push(addonPrices.Kimia);
+  if(pilihMTK)    addonList.push(addonPrices.MTK2x);
 
-  const pilihIPA = document.getElementById("checkIPA")?.checked;
-  const pilihFisika = document.getElementById("checkFisika")?.checked;
-  const pilihKimia = document.getElementById("checkKimia")?.checked;
-  const pilihMTK = document.getElementById("checkMTK")?.checked;
-  
-  // Harga penambahan ditarik dari Price_Table (per grade), tiap unit dijumlah.
-  // Tidak ada lagi diskon bundle Fisika+Kimia.
-  if(pilihIPA){
-    priceUpgrade += addonPrices.IPA;
-  }
-
-  if(pilihFisika){
-    priceUpgrade += addonPrices.Fisika;
-  }
-
-  if(pilihKimia){
-    priceUpgrade += addonPrices.Kimia;
-  }
-
-  if(pilihMTK){
-    priceUpgrade += addonPrices.MTK2x;
-  }
+  // priceUpgrade = total harga penuh (untuk tampilan "penambahan penuh per bulan")
+  const priceUpgrade = addonList.reduce((a,b) => a+b, 0);
 
   // Daftar subjek yang ditambahkan, untuk teks penjelas ke orang tua.
   const tambahanList = [];
@@ -869,7 +856,7 @@ async function lihatUpgrade(){
       ? tambahanList.join("")
       : tambahanList.slice(0,-1).join(", ") + " dan " + tambahanList[tambahanList.length-1];
 
-  if(priceUpgrade === 0){
+  if(addonList.length === 0){
     alert("Silakan pilih penambahan terlebih dahulu.");
     btn.disabled = false;
     btn.style.background = "#2563eb";
@@ -881,21 +868,20 @@ async function lihatUpgrade(){
 
   if(studentTenure === "semesterly"){
   
-    totalUpgrade = calculateSemesterUpgrade(
-      requestDate,
-      semesterEnd,
-      priceUpgrade,
-      breakStart,
-      breakEnd
-    );
+    // Prorate per add-on, lalu jumlah
+    totalUpgrade = addonList.reduce((sum, harga) =>
+      sum + calculateSemesterUpgrade(requestDate, semesterEnd, harga, breakStart, breakEnd)
+    , 0);
   
   }
   
   if(studentTenure === "monthly"){
   
     totalUpgrade = isPreSemester
-      ? priceUpgrade                                          // <= awal semester: penuh
-      : calculateMonthlyUpgrade(requestDate, latestDueDate, priceUpgrade);  // tengah semester: prorate
+      ? priceUpgrade   // pra-semester: penuh (tidak ada prorate)
+      : addonList.reduce((sum, harga) =>
+          sum + calculateMonthlyUpgrade(requestDate, latestDueDate, harga)
+        , 0);
   
   }
   
