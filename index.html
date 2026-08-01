@@ -138,6 +138,26 @@
   </div>
 
 </div>
+
+<div class="card" id="renewalNotice" style="display:none; background:#fff7ed; border:1px solid #fdba74;">
+
+  <b style="display:block;margin-bottom:8px">
+    Masa Perpanjangan Sedang Berlangsung
+  </b>
+
+  <div style="font-size:14px; color:#444; line-height:1.6">
+    Masa perpanjangan paket belajarmu sedang berlangsung, sehingga saat ini
+    tidak bisa melakukan penambahan mata pelajaran. Penambahan mata pelajaran
+    bisa dilakukan bersamaan saat perpanjangan paket ya.
+  </div>
+
+  <a href="https://wa.me/6281119954075" target="_blank" style="text-decoration:none">
+    <button type="button" style="background:#25D366; margin-top:14px;">
+      Hubungi Kakak Siaga untuk bantuan
+    </button>
+  </a>
+
+</div>
   
 <div class="card" id="kelasSection" style="display:none;">
   <b>Pilih kelas</b>
@@ -1167,6 +1187,24 @@ function calculateMonthlyUpgrade(requestDate, dueDate, selisih){
   return Math.round(selisih * (prorateDays / daysInMonth));
 }
 
+// Menghitung selisih hari dari hari ini ke sebuah tanggal (dateStr).
+// Hasil positif = tanggal masih di depan, 0 = hari ini, negatif = sudah lewat.
+function daysUntil(dateStr){
+  if(!dateStr) return null;
+  const target = new Date(dateStr);
+  if(isNaN(target)) return null;
+  target.setHours(0,0,0,0);
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  return Math.round((target - today) / (1000*60*60*24));
+}
+
+// Ambang batas: jika sisa hari ke latest_due_date <= angka ini (termasuk sudah lewat),
+// dianggap sedang dalam masa perpanjangan sehingga upgrade paket diblokir.
+const RENEWAL_WINDOW_DAYS = 12;
+
 async function lookupStudent(){
 
   const btn = document.getElementById("lookupBtn");
@@ -1257,6 +1295,20 @@ async function lookupStudent(){
     studentTenure = data.tenure;
     currentMonthlyPrice = data.currentPrice;
 
+    // --- Cek apakah murid sedang dalam masa perpanjangan (D-12) ---
+    const sisaHari = daysUntil(latestDueDate);
+
+    if(sisaHari !== null && sisaHari <= RENEWAL_WINDOW_DAYS){
+
+      document.getElementById("renewalNotice").style.display = "block";
+
+      btn.innerText = "Data ditemukan";
+      btn.style.background = "#cbd5e1";
+      btn.disabled = true;
+
+      return; // stop di sini — jangan lanjut ke pemilihan kelas/mapel
+    }
+
     kelas = String(data.grade);
 
     document.getElementById("kelas").value = kelas;
@@ -1302,6 +1354,9 @@ function formatTanggal(dateStr){
 }
 
 function resetPortal(){
+
+  // sembunyikan notice masa perpanjangan
+  document.getElementById("renewalNotice").style.display = "none";
 
   // hapus pesan upgrade info jika ada
   document.querySelectorAll(".upgradeInfo").forEach(el => el.remove());
