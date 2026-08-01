@@ -142,7 +142,7 @@
 <div class="card" id="renewalNotice" style="display:none; background:#fff7ed; border:1px solid #fdba74;">
 
   <b style="display:block;margin-bottom:8px">
-    Masa Perpanjangan Sedang Berlangsung
+    Mendekati Periode Perpanjangan
   </b>
 
   <div style="font-size:14px; color:#444; line-height:1.6">
@@ -1296,7 +1296,7 @@ async function lookupStudent(){
     // --- Cek apakah murid sedang dalam masa perpanjangan (D-12) ---
     const sisaHari = daysUntil(latestDueDate);
 
-    if(sisaHari !== null && sisaHari <= RENEWAL_WINDOW_DAYS){
+    if(sisaHari !== null && sisaHari < RENEWAL_WINDOW_DAYS){
 
       document.getElementById("renewalNotice").style.display = "block";
 
