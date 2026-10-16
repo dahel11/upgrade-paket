@@ -244,7 +244,7 @@
   <input id="biayaInput" type="hidden">
   <input id="tenureInput" type="hidden">
   <input id="biayaDisplay" type="hidden">
-  <div style="font-size:13px; color:#555; margin-top:10px; line-height:1.5">
+  <div id="formNote" style="font-size:13px; color:#555; margin-top:10px; line-height:1.5">
   Jumlah sesi mata pelajaran tambahan akan menyesuaikan hingga tanggal jatuh tempo.<br>
   Khusus per bulan, pembayaran bulan berikutnya seluruh mata pelajaran akan digabung dan dibayarkan sesuai tanggal jatuh tempo.
 </div>
@@ -917,6 +917,16 @@ async function lihatUpgrade(){
     titleText = "Biaya penambahan";
   }
 
+  if(studentTenure === "monthly_bundled"){
+
+    totalUpgrade = addonList.reduce((sum, harga) =>
+      sum + calculateSemesterUpgrade(
+        requestDate, semesterEnd, harga, breakStart, breakEnd, BUNDLED_DISCOUNT
+      )
+    , 0);
+
+  }
+
   priceBox.style.display = "block";
   if(studentTenure === "semesterly"){
 
@@ -927,6 +937,19 @@ async function lihatUpgrade(){
     <b>Rp ${totalUpgrade.toLocaleString()}</b>
     <div style="margin-top:6px;color:#666;font-size:13px">
     Harga dihitung hingga akhir semester (${formatTanggal(semesterEnd)})
+    </div>`;
+
+  }
+
+  if(studentTenure === "monthly_bundled"){
+
+    biayaUpgrade = totalUpgrade;
+
+    priceBox.innerHTML =
+    `Biaya penambahan hingga akhir semester: <b>Rp ${totalUpgrade.toLocaleString()}</b>
+    <div style="margin-top:6px;color:#666;font-size:13px">
+    Harga dihitung hingga akhir semester (${formatTanggal(semesterEnd)}).<br>
+    Mata pelajaran tambahan sudah dibayarkan hingga akhir semester, jadi tagihan perpanjangan bulan berikutnya tidak ditambah biaya mata pelajaran tambahan.
     </div>`;
 
   }
@@ -1003,6 +1026,10 @@ async function lihatUpgrade(){
   document.getElementById("formSection").style.display = "block";
   document.getElementById("biayaInput").value = biayaUpgrade;
   document.getElementById("tenureInput").value = studentTenure;
+
+  document.getElementById("formNote").innerHTML = studentTenure === "monthly_bundled"
+    ? "Jumlah sesi mata pelajaran tambahan dihitung hingga akhir semester."
+    : "Jumlah sesi mata pelajaran tambahan akan menyesuaikan hingga tanggal jatuh tempo.<br>Khusus per bulan, pembayaran bulan berikutnya seluruh mata pelajaran akan digabung dan dibayarkan sesuai tanggal jatuh tempo.";
   document.getElementById("biayaDisplay").value = "Rp " + biayaUpgrade.toLocaleString("id-ID");
 
   btn.style.background = "#cbd5e1";
@@ -1092,7 +1119,7 @@ document.getElementById("nomor").addEventListener("input", function(){
 
 });
 
-function calculateSemesterUpgrade(startDate,endDate,priceUpgrade,breakStart,breakEnd){
+function calculateSemesterUpgrade(startDate,endDate,priceUpgrade,breakStart,breakEnd,DISKON = 0.10){
 
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -1144,7 +1171,6 @@ function calculateSemesterUpgrade(startDate,endDate,priceUpgrade,breakStart,brea
   //   amount = ROUND(full + prorate - break)
   //   disc   = ROUND(amount * 10%)
   //   total  = ROUND(amount - disc)
-  const DISKON = 0.10;
   const amount = Math.round(costFullMonth + prorateCost - breakCost);
   const disc   = Math.round(amount * DISKON);
   const total  = Math.round(amount - disc);
@@ -1204,6 +1230,9 @@ function daysUntil(dateStr){
 // dianggap sedang dalam masa perpanjangan sehingga upgrade paket diblokir.
 const RENEWAL_WINDOW_DAYS = 12;
 
+// monthly_bundled: dihitung sampai akhir semester, TANPA diskon 10%.
+const BUNDLED_DISCOUNT = 0;
+
 async function lookupStudent(){
 
   const btn = document.getElementById("lookupBtn");
@@ -1250,6 +1279,7 @@ async function lookupStudent(){
 
     const tenureMap = {
       monthly: "per bulan",
+      monthly_bundled: "bundling hingga akhir semester",
       semesterly: "per semester"
     };
 
